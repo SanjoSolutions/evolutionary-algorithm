@@ -80,6 +80,7 @@ def evaluate_fitness_of_individual(individual):
         weights_2 = np.array(individual[a:a + initial_weights_2.size])
         weights_2 = np.resize(weights_2, initial_weights_2.shape)
         weights[index] = weights_2
+        a += initial_weights_2.size
     model.set_weights(weights)
 
     random.seed(0)
@@ -111,9 +112,21 @@ def breed(parents):
 
     children = []
     for parent_a, parent_b in parent_pairs:
-        index_up_to = math.ceil(len(parent_a) / 2.0)
-        children.append(parent_a[:index_up_to + 1] + parent_b[index_up_to + 1:])
-        children.append(parent_b[:index_up_to + 1] + parent_a[index_up_to + 1:])
+        child_a = tuple()
+        child_b = tuple()
+
+        index = 0
+        for initial_weights_2 in initial_weights:
+            half = math.ceil(initial_weights_2.size / 2.0)
+            child_a += parent_a[index:index + half]
+            child_b += parent_b[index + half:index + half + (initial_weights_2.size - half)]
+            index += initial_weights_2.size
+
+        # index_up_to = math.ceil(len(parent_a) / 2.0)
+        # child_a = parent_a[:index_up_to + 1] + parent_b[index_up_to + 1:]
+        # child_b = parent_b[:index_up_to + 1] + parent_a[index_up_to + 1:]
+        children.append(child_a)
+        children.append(child_b)
 
     return children
 
