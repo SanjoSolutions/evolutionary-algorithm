@@ -1,4 +1,5 @@
 import itertools
+import math
 import random
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import InputLayer, Dense
@@ -39,7 +40,8 @@ def main():
     for iteration in range(NUMBER_OF_ITERATIONS):
         fitness_evaluation = evaluate_fitness(population)
         sort_population_based_on_fitness(population, fitness_evaluation)
-        print('Scores of top 5:', [fitness_evaluation[individual] for individual in population[:5]])
+        i = 10
+        print('Scores of top ' + str(i) + ':', [fitness_evaluation[individual] for individual in population[:i]])
         parents = select_fittest_individuals(population)
         children = breed(parents)
         population = replace_least_fit_individuals(population, children)
@@ -109,8 +111,9 @@ def breed(parents):
 
     children = []
     for parent_a, parent_b in parent_pairs:
-        children.append((parent_a[0], parent_b[1]))
-        children.append((parent_b[0], parent_a[1]))
+        index_up_to = math.ceil(len(parent_a) / 2.0)
+        children.append(parent_a[:index_up_to + 1] + parent_b[index_up_to + 1:])
+        children.append(parent_b[:index_up_to + 1] + parent_a[index_up_to + 1:])
 
     return children
 
