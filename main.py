@@ -38,7 +38,7 @@ def evaluate_fitness(population):
 
 
 def evaluate_fitness_of_individual(individual):
-    return 10000 - abs(individual[0] + individual[1] - 10)
+    return individual[0] * individual[1]
 
 
 def select_fittest_individuals(population, fitness_evaluation):
