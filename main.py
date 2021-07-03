@@ -1,5 +1,4 @@
 import itertools
-import math
 import random
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import InputLayer, Dense
@@ -11,13 +10,17 @@ import tensorflow as tf
 from road.road import Road
 
 NUMBER_OF_ITERATIONS = 1000
-INITIAL_POPULATION_SIZE = 128
-NUMBER_OF_PARENT_TO_SELECT = int(INITIAL_POPULATION_SIZE / 2)
+INITIAL_POPULATION_SIZE = 18
+NUMBER_OF_PARENTS_TO_SELECT = int(INITIAL_POPULATION_SIZE / 2)
+if NUMBER_OF_PARENTS_TO_SELECT % 2 == 1:
+    NUMBER_OF_PARENTS_TO_SELECT -= 1
+MUTATION_CHANCE = 0.02
+NUMBER_OF_CHILDREN = 1
 
 
 model = Sequential([
-    InputLayer(input_shape=(Road.NUMBER_OF_ROWS * Road.NUMBER_OF_ROADS,)),
-    Dense(32, activation='relu'),
+    InputLayer(input_shape=(Road.NUMBER_OF_ROWS * Road.NUMBER_OF_ROADS + Road.NUMBER_OF_ROWS,)),
+    Dense(2, activation='relu'),
     Dense(3, activation='softmax')
 ])
 
@@ -40,8 +43,8 @@ def main():
     for iteration in range(NUMBER_OF_ITERATIONS):
         fitness_evaluation = evaluate_fitness(population)
         sort_population_based_on_fitness(population, fitness_evaluation)
-        i = 10
-        print('Scores of top ' + str(i) + ':', [fitness_evaluation[individual] for individual in population[:i]])
+        i = 20
+        print('Iteration ' + str(iteration) + ': Scores of top ' + str(i) + ':', [fitness_evaluation[individual] for individual in population[:i]])
         parents = select_fittest_individuals(population)
         children = breed(parents)
         population = replace_least_fit_individuals(population, children)
@@ -57,8 +60,12 @@ def generate_initial_population():
 def generate_individual():
     weights = [0.0] * weights_length
     for index in range(weights_length):
-        weights[index] = random.uniform(-1.0, 1.0)
+        weights[index] = generate_genome()
     return tuple(weights)
+
+
+def generate_genome():
+    return random.uniform(-1.0, 1.0)
 
 
 def evaluate_fitness(population):
@@ -83,6 +90,7 @@ def evaluate_fitness_of_individual(individual):
         a += initial_weights_2.size
     model.set_weights(weights)
 
+    random_state = random.getstate()
     random.seed(0)
     road = Road()
     done = False
@@ -90,17 +98,26 @@ def evaluate_fitness_of_individual(individual):
     road.reset()
     while not done:
         x = np.array([
-            list(itertools.chain.from_iterable(road.get_state()))
+            list(1 if cell == Road.OTHER_CAR else 0 for cell in itertools.chain.from_iterable(road.rows)) +
+            list(car_index_to_embedding(road.car_index))
         ])
         action = tf.math.argmax(model(x)[0]).numpy()
         state, reward, done = road.step(action)
         total_reward += reward
 
+    random.setstate(random_state)
+
     return total_reward
 
 
+def car_index_to_embedding(car_index):
+    embedding = [0] * Road.NUMBER_OF_ROADS
+    embedding[car_index] = 1
+    return tuple(embedding)
+
+
 def select_fittest_individuals(population):
-    return population[:NUMBER_OF_PARENT_TO_SELECT]
+    return population[:NUMBER_OF_PARENTS_TO_SELECT]
 
 
 def breed(parents):
@@ -111,22 +128,19 @@ def breed(parents):
         parent_pairs.append((parents[index], parents[index + 1]))
 
     children = []
-    for parent_a, parent_b in parent_pairs:
-        child_a = tuple()
-        child_b = tuple()
+    for parents in parent_pairs:
+        for child_number in range(NUMBER_OF_CHILDREN):
+            child = [0.0] * weights_length
 
-        index = 0
-        for initial_weights_2 in initial_weights:
-            half = math.ceil(initial_weights_2.size / 2.0)
-            child_a += parent_a[index:index + half]
-            child_b += parent_b[index + half:index + half + (initial_weights_2.size - half)]
-            index += initial_weights_2.size
+            for index in range(len(child)):
+                if random.random() <= MUTATION_CHANCE:
+                    child[index] = generate_genome()
+                else:
+                    child[index] = random.choice([parent[index] for parent in parents])
 
-        # index_up_to = math.ceil(len(parent_a) / 2.0)
-        # child_a = parent_a[:index_up_to + 1] + parent_b[index_up_to + 1:]
-        # child_b = parent_b[:index_up_to + 1] + parent_a[index_up_to + 1:]
-        children.append(child_a)
-        children.append(child_b)
+            child = tuple(child)
+
+            children.append(child)
 
     return children
 
