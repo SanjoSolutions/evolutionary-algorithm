@@ -9,12 +9,12 @@ import tensorflow as tf
 
 from road.road import Road
 
-NUMBER_OF_ITERATIONS = 1000
+NUMBER_OF_ITERATIONS = 100000
 INITIAL_POPULATION_SIZE = 18
 NUMBER_OF_PARENTS_TO_SELECT = int(INITIAL_POPULATION_SIZE / 2)
 if NUMBER_OF_PARENTS_TO_SELECT % 2 == 1:
     NUMBER_OF_PARENTS_TO_SELECT -= 1
-MUTATION_CHANCE = 0.02
+MUTATION_CHANCE = 0.04
 NUMBER_OF_CHILDREN = 1
 
 
@@ -39,8 +39,9 @@ weights_length = len(flatten_weights_3)
 
 def main():
     random.seed(0)
+    print('Random state:', random.getstate())
     population = generate_initial_population()
-    for iteration in range(NUMBER_OF_ITERATIONS):
+    for iteration in range(1, NUMBER_OF_ITERATIONS + 1):
         fitness_evaluation = evaluate_fitness(population)
         sort_population_based_on_fitness(population, fitness_evaluation)
         i = 20
@@ -96,7 +97,7 @@ def evaluate_fitness_of_individual(individual):
     done = False
     total_reward = 0
     road.reset()
-    while not done:
+    while not done and total_reward < 100:
         x = np.array([
             list(1 if cell == Road.OTHER_CAR else 0 for cell in itertools.chain.from_iterable(road.rows)) +
             list(car_index_to_embedding(road.car_index))
