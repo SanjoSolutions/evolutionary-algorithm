@@ -8,6 +8,7 @@ import numpy as np
 import tensorflow as tf
 
 from road.road import Road
+from shared import car_index_to_embedding
 
 NUMBER_OF_ITERATIONS = 100000
 INITIAL_POPULATION_SIZE = 18
@@ -109,12 +110,6 @@ def evaluate_fitness_of_individual(individual):
     random.setstate(random_state)
 
     return total_reward
-
-
-def car_index_to_embedding(car_index):
-    embedding = [0] * Road.NUMBER_OF_ROADS
-    embedding[car_index] = 1
-    return tuple(embedding)
 
 
 def select_fittest_individuals(population):

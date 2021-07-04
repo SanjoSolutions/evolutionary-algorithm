@@ -4,8 +4,8 @@ import random
 import MultiNEAT as NEAT
 import numpy as np
 
-from main import car_index_to_embedding
 from road.road import Road
+from shared import car_index_to_embedding
 
 params = NEAT.Parameters()
 
@@ -21,6 +21,7 @@ genome = NEAT.Genome(
     NEAT.ActivationFunction.UNSIGNED_SIGMOID,
     0,
     params,
+    0,
     0
 )
 
@@ -41,6 +42,7 @@ def evaluate(genome):
         x = list(1 if cell == Road.OTHER_CAR else 0 for cell in itertools.chain.from_iterable(road.rows)) + \
             list(car_index_to_embedding(road.car_index)) + \
             [1]
+        net.Flush()
         net.Input(x)
         net.Activate()
         output = net.Output()
@@ -54,13 +56,13 @@ def evaluate(genome):
 
 
 def main():
-    for generation in range(100):
+    for generation in range(1000):
 
         genome_list = NEAT.GetGenomeList(pop)
+        fitness_list = NEAT.EvaluateGenomeList_Serial(genome_list, evaluate, display=False)
+        NEAT.ZipFitness(genome_list, fitness_list)
 
-        for genome in genome_list:
-            fitness = evaluate(genome)
-            genome.SetFitness(fitness)
+        print('Fitness:', max(fitness_list), 'Generation:', generation)
 
         pop.Epoch()
 
